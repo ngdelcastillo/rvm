@@ -1,24 +1,49 @@
 #!/usr/bin/env bash
 
-case "$1" in
-  --trace)   set -o xtrace  ; shift ;;
-  --verbose) set -o verbose ; shift ;;
-esac
+sudo_args=()
 
-prefix="PATH='$PATH'"
+while [[ $# -gt 0 ]] ; do
+  token="${1}"
 
-if [[ -n "${BUNDLE_PATH:-""}" ]] ; then
-  prefix="BUNDLE_PATH='$BUNDLE_PATH' $prefix"
+  #rvm trace flag
+  case "${token}" in
+  (--trace)
+    export PS4="+ \${BASH_SOURCE##\${rvm_path:-}} : \${FUNCNAME[0]:+\${FUNCNAME[0]}()}  \${LINENO} > "
+    set -o xtrace
+    ;;
+
+  #rvm verbose flag
+  (--verbose)
+    set -o verbose
+    ;;
+
+  #not an rvm option, treat as sudo option
+  (-*)
+    sudo_args+=("$token")
+
+    #option with value
+    case "$token" in
+    (-g|-u|-p|-r|-t|-U|-C)
+      shift
+      #read & append the value
+      sudo_args+=("$1")
+      ;;
+    esac
+    ;;
+
+  #no more options skip processing
+  (*)
+    break
+    ;;
+  esac
+
+  #go to next param
+  shift
+done
+
+if [[ $# -gt 0 ]]
+then
+  eval sudo "${sudo_args[@]}" /usr/bin/env $(/usr/bin/env | grep -E '^rvm|^gemset|^PATH|^IRBRC|RUBY|GEM' | sed 's/=\(.*\)$/="\1"/' ) "$@"
+else
+  printf "Usage:\n  $0 [--trace] [--verbose] [sudo-options] command [command-options]\n"
 fi
-
-if [[ -n "${GEM_HOME:-""}" ]] ; then
-  prefix="GEM_HOME='$GEM_HOME' $prefix"
-fi
-
-if [[ -n "${GEM_PATH:-""}" ]] ; then
-  prefix="GEM_PATH='$GEM_PATH' $prefix"
-fi
-
-eval "sudo /usr/bin/env $prefix $@"
-
-exit $?

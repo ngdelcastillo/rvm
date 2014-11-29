@@ -6,7 +6,7 @@ module RVM
   class Environment
     extend Forwardable
 
-    %w(configuration utility alias list gemset rubies cleanup sets env tools info).each do |key|
+    %w(configuration utility alias list gemset rubies cleanup sets env tools info wrapper).each do |key|
       require File.join("rvm", "environment", key)
     end
 
@@ -34,6 +34,11 @@ module RVM
     end
 
     # Returns the expanded name, using the same method as used by the rvm command line.
+    #
+    # Suppose that you are in the 1.9.2 patchlevel Environment.
+    #
+    # env.expanded_name # => "ruby-1.9.2-p0"
+    #
     def expanded_name
       @expanded_name ||= tools_identifier.to_s
     end
@@ -52,7 +57,7 @@ module RVM
       actual_config.each_pair do |k, v|
         config << "#{k}=#{escape_argument(v.to_s)}"
       end
-      run_silently :export, config.join(" ")
+      run_silently "export #{config.join(" ")}"
       run_silently :source, File.join(rvm_path, "scripts", "rvm")
     end
 

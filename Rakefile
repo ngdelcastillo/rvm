@@ -1,70 +1,131 @@
 require "rubygems"
+require "hoe"
 
-task :default => ["test"]
-task :test do exec "bash -l -c \"./test/suite\"" ; end
+Hoe.spec "rvm" do
 
-namespace :gem do
-  task :refresh do
-    exec "gem uninstall rvm ; rm -f pkg/*.gem ./rvm.gemspec && rake gemspec && rake build && gem install pkg/*.gem --no-rdoc --no-ri"
+  developer "Wayne E. Seguin", "wayneeseguin@gmail.com"
+
+  # TODO: package the release with the API .gem
+  #gemspec.files           = [
+  #  "README", "sha1", "LICENCE", "rvm.gemspec",
+  #  # TODO: Go through manifest carefully.
+  #  # FOR NOW glob
+  #  Dir::glob("lib/**/**"),
+  #  Dir::glob("releases/rvm-#{RVM::Version::STRING}.tar.gz*")
+  #].flatten
+
+  spec_extras[:rdoc_options] = proc do |ary|
+    # hoe kinda sucks for this! TODO: submit patch for Hoe#rdoc_options
+    ary.push "--inline-source", "--charset=UTF-8"
   end
 
-  desc "Build the rvm gem."
-  task :build do
-puts <<-LOCAL_INSTALL_WARNING
-
-  $(tput setaf 3)INSTALLING FROM SOURCE$(tput sgr0)
-
-  If you are using rvm from source, DO NOT build the gem.
-  Instead, run the following from the rvm source's root dir.
-
-    $(tput setaf 2)For installing/updating:  ./install$(tput sgr0)
-
-LOCAL_INSTALL_WARNING
-    puts "$(gem build rvm.gemspec)"
-  end
-
-  desc "Install the rvm gem (NO sudo)."
-  task :install do
-    %x{gem install rvm*.gem --no-rdoc --no-ri -l}
-  end
-end
-
-begin
-  require "jeweler"
-  require "lib/rvm/version"
-
-  Jeweler::Tasks.new do |gemspec|
-    gemspec.name            = "rvm"
-    gemspec.version         = RVM::Version::STRING
-    gemspec.summary         = "Ruby Version Manager (rvm)"
-    gemspec.require_paths   = ["lib"]
-    gemspec.date            = Time.now.strftime("%Y-%m-%d")
-    gemspec.description     = "Manages Ruby interpreter environments and switching between them."
-    gemspec.platform        = Gem::Platform::RUBY
-    gemspec.files           = ["install", "README", "sha1", "LICENCE", "rvm.gemspec", "bash/*", "binscripts/*", "scripts/*", "patches/*", "examples/*", "config/*", "help/**", "gemsets/*", "contrib/*", Dir::glob("lib/**/**"), Dir::glob("man/**/**")].flatten
-    gemspec.executables     = Dir::glob("bin/rvm-*").map{ |script| File::basename script }
-    gemspec.require_path    = "lib"
-    gemspec.has_rdoc        = File::exist?("doc")
-    gemspec.rdoc_options    = ["--inline-source", "--charset=UTF-8"]
-    gemspec.authors         = ["Wayne E. Seguin"]
-    gemspec.email           = "wayneeseguin@gmail.com"
-    gemspec.homepage        = "http://github.com/wayneeseguin/rvm"
-    gemspec.extensions      << "extconf.rb" if File::exists?("extconf.rb")
-    gemspec.rubyforge_project = "rvm"
-    gemspec.post_install_message = <<-POST_INSTALL_MESSAGE
+  spec_extras[:post_install_message] = <<-POST_INSTALL_MESSAGE
 #{"*" * 80}
 
-  In order to setup rvm for your user's environment you must now run rvm-install.
-  rvm-install will be found in your current gems bin directory corresponding to where the gem was installed.
+  This gem contains only the Ruby libraries for the RVM Ruby API.
 
-  rvm-install will install the scripts to your user account and append itself to your profiles in order to
-  inject the proper rvm functions into your shell so that you can manage multiple rubies.
+  In order to install RVM please use one of the methods listed in the
+  documentation:
+
+    https://rvm.beginrescueend.com/rvm/install/
+
+  such as,
+
+    bash < <(curl -s -B https://rvm.beginrescueend.com/install/rvm)
+
+  followed by placing the sourcing line in your ~/.bash_profile or wherever may
+  be appropriate for your setup (example, .zshenv, /etc/profile, ...):
+
+    # Load RVM into a shell session *as a function*
+    [[ -s "$HOME/.rvm/scripts/rvm" ]] && . "$HOME/.rvm/scripts/rvm"
+
+  After completing setup please open a new shell to use RVM and be sure to run
+  'rvm notes' to gain a list of dependencies to install before installing the
+  first Ruby. You can read more details about this process on the above
+  mentioned install page as well as the basics page:
+
+    https://rvm.beginrescueend.com/rvm/basics/
+
+  Enjoy!
+
+      ~Wayne
 
 #{"*" * 80}
     POST_INSTALL_MESSAGE
-
-  end
-rescue LoadError
-  puts "Jeweler not available. Install it with: gem install jeweler"
 end
 
+task :test do
+  exec "bash -l -c \"./test/suite\""
+end
+
+#
+# VirtualBox Helpers
+#
+
+# Matches a host declaration in a ssh config file.
+HOST_REGEXP     = /^\s*Host\s+([^\s#*]+)/
+SNAPSHOT        = (ENV['SNAPSHOT'] || 'CURRENT').upcase
+SSH_CONFIG_FILE = ENV['SSH_CONFIG_FILE'] || File.expand_path('../config/ssh', __FILE__)
+
+def shell(cmd)
+  puts "$ #{cmd}"
+  system(cmd)
+end
+
+def hosts
+  @hosts ||= begin
+    hosts = []
+
+    File.open(SSH_CONFIG_FILE) do |io|
+      io.each_line do |line|
+        next unless line =~ HOST_REGEXP
+        hosts << $1
+      end
+    end
+
+    hosts
+  end
+end
+
+namespace :vbox do
+  desc "start each vm"
+  task :start => :stop do
+    hosts.each do |host|
+      shell "VBoxManage -q snapshot #{host} restore #{SNAPSHOT}"
+      shell "VBoxManage -q startvm #{host} --type headless"
+      shell "ssh -MNf -F '#{SSH_CONFIG_FILE}' '#{host}' >/dev/null 2>&1 </dev/null"
+    end
+  end
+
+  desc "stop each vm"
+  task :stop do
+    hosts.each do |host|
+      if `VBoxManage -q list runningvms`.include?(host)
+        shell "VBoxManage -q controlvm #{host} poweroff"
+      end
+    end
+  end
+
+  desc 'Run the tests remotely on each VM'
+  task :test do
+    begin
+      Rake::Task["vbox:start"].invoke
+      Rake::Task["vbox:remote_test"].invoke
+    ensure
+      Rake::Task["vbox:stop"].execute(nil)
+    end
+  end
+
+  desc 'Run the tests remotely (assuming each VM is running)'
+  task :remote_test do
+    local_dir  = File.expand_path("..", __FILE__)
+    remote_dir = "$(pwd)/rvm"
+    remote_script = "vboxtest/test_suite.sh"
+    sh "'#{File.expand_path("../vboxtest.sh", __FILE__)}' -L '#{local_dir}' -R '#{remote_dir}' -S '#{remote_script}' #{hosts.join(' ')}"
+  end
+
+  desc 'Run the tests locally'
+  task :local_test do
+    sh File.expand_path("../vboxtest/test_suite.sh", __FILE__)
+  end
+end

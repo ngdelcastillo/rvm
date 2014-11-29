@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-add(){
+add()
+{
 
   token=${1:-""}
 
@@ -8,13 +9,28 @@ add(){
 
   if [[ -n "$format" ]] ; then
 
-    format="${format}-\$${token}"
+    [[ ${previous_is_format_var:-0} == 1 ]] && eval "${token}_prefix_flag=1"
+
+    format="${format}\$${token}"
 
   else
 
     format="\$${token}"
 
   fi
+
+  previous_is_format_var=1
+
+  return 0
+}
+
+add_raw_token()
+{
+  previous_is_format_var=0
+
+  token=${1:-""}
+
+  format="${format:-""}${token}"
 
   return 0
 }
@@ -51,22 +67,19 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
 
       -d|--no-default) no_default=1      ;;
 
-      *) echo "Unrecognized command line option '$token' for $0" ; exit 1 ;;
+      *) add_raw_token "$token" ;;
 
     esac
 
   done
 
+  if [[ -z "${format:-""}" ]] ; then
 
-  if [[ -z "$format" ]] ; then
+    for default in interpreter version patchlevel gemset ; do
 
-    add "interpreter"
+      add "$default"
 
-    add "version"
-
-    add "patchlevel"
-
-    add "gemset"
+    done
 
   fi
 
@@ -80,7 +93,7 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
     # Only people who explicitely ask for this will have the
     #   slight performance penalty associated.
 
-    if [[ "$(rvm tools identifier)" = "$(rvm alias show default)"  ]] ; then
+    if [[ "$(rvm tools identifier)" == "$(rvm alias show default)"  ]] ; then
 
       exit 0
 
@@ -94,11 +107,15 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
 
     interpreter=${strings[0]}
 
+    [[ ${interpreter_prefix_flag:-0} -gt 0 ]] && interpreter="-${interpreter}"
+
   fi
 
   if [[ ${version_flag:-0} -gt 0 || -n "$unicode_flag" ]] ; then
 
     version=${strings[1]}
+
+    [[ ${version_prefix_flag:-0} -gt 0 ]] && version="-${version}"
 
   fi
 
@@ -108,6 +125,8 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
 
       patchlevel=${strings[2]}
 
+      [[ ${patchlevel_prefix_flag:-0} -gt 0 ]] && patchlevel="-${patchlevel}"
+
     fi
 
   fi
@@ -115,6 +134,8 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
   if [[ ${architecture_flag:-0} -gt 0 ]] ; then
 
     architecture="$(echo "$(ruby -v)" | sed 's/^.*\[//' | sed 's/\].*$//')"
+
+    [[ ${architecture_prefix_flag:-0} -gt 0 ]] && architecture="-${architecture}"
 
   fi
 
@@ -148,9 +169,9 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
 
       ironruby) unicode="♭" ;;
 
-      mput)     unicode="⎈" ;;
-
       system)   unicode="➆" ;;
+
+      goruby)   unicode="⛳";;
 
       ruby)
 
@@ -172,22 +193,17 @@ if [[ -n "$ruby" && -n "$(echo "$ruby" | awk '/rvm/{print}')" ]] ; then
 
     esac
 
-    if echo "$ruby_string" | \grep -q '-head' ; then
+    if echo "$ruby_string" | \grep '-head' >/dev/null 2>&1 ; then
 
       unicode="${unicode}〠"
 
     fi
 
+    [[ ${unicode_prefix_flag:-0} -gt 0 ]] && unicode="-${unicode}"
+
   fi
 
-  eval "prompt=\"$format\""
-
-  echo "$prompt" \
-    | sed -e 's#^[[:space:]]*-*##g' \
-          -e 's#--*#-#g' \
-          -e 's#-*[[:space:]]*$##' \
-          -e 's#-'${rvm_gemset_separator:-"@"}'#'${rvm_gemset_separator:-"@"}'#'
-
+  eval "echo \"$format\""
 
 else
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source "$rvm_path/scripts/base"
+source "$rvm_scripts_path/base"
 
 usage()
 {
@@ -11,7 +11,7 @@ usage()
 # Return the identifier that's current in use.
 tools_identifier()
 {
-  __rvm_environment_identifier
+  __rvm_env_string
 }
 
 tools_path_identifier()
@@ -21,11 +21,11 @@ tools_path_identifier()
     return 1
   fi
 
-  source "$rvm_path/scripts/rvm"
+  source "$rvm_scripts_path/rvm" >/dev/null 2>&1
   builtin cd "$1"
-  rvm_promptless=1 __rvm_project_rvmrc
+  rvm_promptless=1 __rvm_project_rvmrc >/dev/null 2>&1
   rvmrc_result="$?"
-  __rvm_environment_identifier
+  __rvm_env_string
   exit $rvmrc_result
 }
 

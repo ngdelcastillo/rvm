@@ -1,1 +1,1 @@
-bundler
+rake -v0.8.7

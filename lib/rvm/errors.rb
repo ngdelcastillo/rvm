@@ -15,7 +15,7 @@ module RVM
 
   end
 
-  # Something occured processing the command and rvm couldn't parse the results.
+  # Something occurred while processing the command and RVM couldn't parse the results.
   class IncompleteCommandError < Error; end
 
   # The given action can't replace the env for the current process.
@@ -24,7 +24,7 @@ module RVM
   #
   # Provides access to the output of the shell command via +#result+.
   class IncompatibleRubyError < ErrorWithResult; end
-  
+
   # Called when tools.path_identifier is called on a dir with an untrusted rvmrc.
   class ErrorLoadingRVMRC < Error; end
 

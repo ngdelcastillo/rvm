@@ -1,7 +1,7 @@
 # == Ruby Version Manager - Ruby API
 #
 # Provides a wrapper around the command line api implemented as part of the api.
-# If you're not familiar with rvm, please read http://rvm.beginrescueend.com/
+# If you're not familiar with rvm, please read https://rvm.beginrescueend.com/
 # first.
 #
 # == Usage
@@ -54,11 +54,13 @@
 # RVM::Environment.new, versus RVM.environment
 #
 module RVM
-  require 'rvm/errors'
+  VERSION = "1.8.6"
 
-  autoload :Shell,       'rvm/shell'
-  autoload :Environment, 'rvm/environment'
-  autoload :Version,     'rvm/version'
+  require "rvm/errors"
+
+  require "rvm/shell"
+  require "rvm/environment"
+  require "rvm/version"
 
   class << self
 
@@ -79,6 +81,8 @@ module RVM
     #   RVM.environments("ree@rails3,rbx@rails3") do |env|
     #     puts "Full environment: #{env.expanded_name}"
     #   end
+    #   # => "ree-1.8.7@rails3"
+    #   # => "rbx-1.1.0@rails3" # Suppose that you are installed rbx 1.1.0
     #
     # Alternatively, you can use the more ruby-like fashion:
     #

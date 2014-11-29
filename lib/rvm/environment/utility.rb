@@ -32,6 +32,10 @@ module RVM
       identifier.gsub(/@.*$/, '')
     end
 
+    def self.identifier_to_gemset_name(identifier)
+      identifier.gsub(/^.*@/, '')
+    end
+
     # Returns the currentl environment.
     # Note that when the ruby is changed, this is reset - Also,
     # if the gemset is changed it will also be reset.
@@ -92,8 +96,8 @@ module RVM
     end
 
     def ruby_string(result)
-      if result && result[:rvm_ruby_string]
-        result[:rvm_ruby_string]
+      if result && result[:rvm_env_string]
+        Environment.identifier_to_ruby_string result[:rvm_env_string]
       else
         self.class.identifier_to_ruby_string(expanded_name)
       end
@@ -162,7 +166,6 @@ module RVM
       if compatible_with_current?(result)
         ENV['GEM_HOME']    = result[:GEM_HOME]
         ENV['GEM_PATH']    = result[:GEM_PATH]
-        ENV['BUNDLE_PATH'] = result[:BUNDLE_PATH]
         Gem.clear_paths if defined?(Gem)
       else
         raise IncompatibleRubyError.new(result, "The given ruby environment requires #{ruby_string(result)} (versus #{self.class.current_ruby_string})")

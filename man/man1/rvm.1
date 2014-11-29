@@ -94,11 +94,6 @@ Emit rvm version loaded for current shell\&.
 patch level to use with rvm use / install
 .RE
 .PP
-\fB\-\-prefix\fR
-.RS 4
-path for all rvm files (\fI~/\&.rvm/\fR), with trailing slash!
-.RE
-.PP
 \fB\-\-bin\fR
 .RS 4
 path for binaries to be placed (\fI~/\&.rvm/bin/\fR)
@@ -193,6 +188,11 @@ Setup current shell to use a specific ruby version\&.
 Reload rvm source itself (useful after changing rvm source)\&.
 .RE
 .PP
+\fBdo\fR
+.RS 4
+Executes the command against either all or a listed subset of rubies. eg. rvm do gem --version ; rvm 1.8.7,1.9.2 do rake --version
+.RE
+.PP
 \fBenv\fR
 .RS 4
 Displays information about an environment specified but the given ruby string\&. Useful for getting a sourceable path or an evaluatable set of shell variable declarations\&.
@@ -200,13 +200,18 @@ Displays information about an environment specified but the given ruby string\&.
 .PP
 \fBimplode\fR
 .RS 4
-(seppuku) removes the rvm installation completely\&. This means everything in $rvm_path (\fI~/\&.rvm\fR)\&. This does not touch your profiles, which is why there is an if around the sourcing
+(seppuku) removes the rvm installation completely\&. This means everything in $rvm_path (\fI~/\&.rvm\fR)\&. This does not touch your profiles. However, this means that you must manually clean up your profiles and remove the lines which source RVM.
 \fIscripts/rvm\fR\&.
 .RE
 .PP
 \fBupdate\fR
 .RS 4
 Upgrades rvm to the latest version\&. (If you experience bugs try this first with \-\-head)\&.
+.RE
+.PP
+\fBget\fR
+.RS 4
+RVM get will 'get' the version you specify. This must be one of latest or head\&. With no arguments the rvm get help section will be shown.\&.
 .RE
 .PP
 \fBreset\fR
@@ -317,9 +322,14 @@ Install a dependency package {readline,iconv,zlib,openssl}\&.
 http://rvm\&.beginrescueend\&.com/packages/
 .RE
 .PP
+\fBrequirements\fR
+.RS 4
+Show additional OS specific dependencies/requirements for building various rubies.
+.RE
+.PP
 \fBnotes\fR
 .RS 4
-Display notes, with operating system specifics\&.
+Display notes. Operating system specifics are now under 'requirements'\&.
 .RE
 .SH "IMPLEMENTATION"
 .PP
@@ -356,11 +366,6 @@ GemStone Ruby, awesome persistent ruby object store\&.
 \fBironruby\fR
 .RS 4
 IronRuby, NOT supported yet\&. Looking for volunteers to help\&.
-.RE
-.PP
-\fBmput\fR
-.RS 4
-shyouhei(mput)\'s github repository, popular in Japan :)
 .RE
 .PP
 \fBsystem\fR

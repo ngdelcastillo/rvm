@@ -16,7 +16,7 @@ __rvm_subcommand()
   while [[ $c -lt $COMP_CWORD ]] ; do
     word="${COMP_WORDS[c]}"
     for subcommand in $1; do
-      if [[ "$subcommand" = "$word" ]]; then
+      if [[ "$subcommand" == "$word" ]]; then
         echo "$subcommand"
         return
       fi
@@ -37,7 +37,7 @@ __rvm_gemsets ()
 
 __rvm_help_pages ()
 {
-  ls "$rvm_path/help"
+  ls "$rvm_help_path"
 }
 
 __rvm_known ()
@@ -74,7 +74,6 @@ _rvm_opts ()
     -v\
     --version\
     -l --level\
-    --prefix\
     --bin\
     --gems\
     --archive\

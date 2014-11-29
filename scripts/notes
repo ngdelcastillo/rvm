@@ -1,133 +1,16 @@
 #!/usr/bin/env bash
 
-system="$(uname)"
+ printf "\n\033[32mSYSTEM NOTES:\033[0m"
 
-if [[ "Linux" = "$system" ]] ; then
-  for file in /etc/*-release ; do
-    release="( $(cat $file) )" ; break
-  done
-  printf "\n\nNotes for ${system} $release\n"
-
-  rvm_aptitude_binary="$(command -v aptitude || command -v apt-get)"
-  rvm_emerge_binary="$(command -v emerge)"
-  rvm_pacman_binary="$(command -v pacman)"
-  rvm_yum_binary="$(command -v yum)"
-
-  printf "
-NOTE: 'ruby' represents Matz's Ruby Interpreter (MRI) (1.8.X, 1.9.X)
-             This is the *original* / standard Ruby Language Interpreter
-      'ree'  represents Ruby Enterprise Edition
-      'rbx'  represents Rubinius
-
-bash >= 3.2 is required
-curl is required
-git is required (>= 1.7 recommended)
-patch is required (for ree and some ruby-head's).
-
-If you wish to install rbx and/or Ruby 1.9 head (MRI) (eg. 1.9.2-head),
-then you must install and use rvm 1.8.7 first.
-
-If you wish to have the 'pretty colors' again,
-  set 'export rvm_pretty_print_flag=1' in ~/.rvmrc.
+ printf "\n
+If you do not wish to enable reading of per-project .rvmrc files, simply set:
+        export rvm_project_rvmrc=0
+within either your /etc/rvmrc or \$HOME/.rvmrc file, then log out and back in.
 "
 
-  if [[ ! -z "$rvm_aptitude_binary" ]] ; then
-    printf "
-dependencies:
-# For RVM
-  rvm: bash curl git
-
-# For JRuby (if you wish to use it) you will need:
-  jruby: aptitude install curl sun-java6-bin sun-java6-jre sun-java6-jdk
-
-# For Ruby (MRI & ree)  you should install the following OS dependencies:
-  ruby: aptitude install build-essential bison openssl libreadline5 libreadline-dev curl git zlib1g zlib1g-dev libssl-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev
-
-  ruby-head: git subversion autoconf
-
-# For IronRuby (if you wish to use it) you will need:
-  ironruby: aptitude install curl mono-2.0-devel
+  printf "\n\r
+You _must_ read 'rvm requirements' for additional OS specific requirements for
+various rubies, and native-extension gems. Expect failures until those are met!
 "
-
-  elif [[ ! -z "$rvm_emerge_binary" ]] ; then
-    printf "
-dependencies:
-  # For RVM
-  rvm: bash curl git
-
-  # For MRI based rubies you will need:
-  ruby: # TODO: tell Wayne what goes here if you use Gentoo :)
-  ruby-head: # TODO: tell Wayne what goes here if you use Gentoo :)
-
-  # For JRuby (if you wish to use it) you will need:
-  jruby: emerge dev-java/sun-jdk dev-java/sun-jre-bin
-
-  # For IronRuby (if you wish to use it) you will need:
-  ironruby: emerge dev-lang/mono
-    "
-
-  elif [[ ! -z "$rvm_pacman_binary" ]] ; then
-    printf "
-dependencies:
-  # For RVM itself
-  rvm: bash curl git
-
-  # For Ruby (MRI & Ree) you should install the following OS dependencies:
-  ruby: pacman -Sy --noconfirm patch curl bison zlib readline libxml2 git make
-  ruby-head: pacman -Sy --noconfirm subversion autoconf diffutils patch bison make
-
-  # For JRuby (if you wish to use it) you will need:
-  jruby: pacman -Sy --noconfirm jdk jre curl
-
-  # For IronRuby (if you wish to use it) you will need:
-  ironruby: pacman -Sy --noconfirm mono
-"
-
-  elif [[ ! -z "$rvm_yum_binary" ]] ; then
-    printf "
-dependencies:
-  # For RVM
-  rvm: yum install -y bash curl git
-
-  # For Ruby (MRI & Ree) you should install the following OS dependencies:
-  ruby: yum install -y gcc-c++ patch readline readline-devel zlib zlib-devel libyaml-devel libffi-devel ;
-        yum install -y iconv-devel # NOTE: For centos 5.4 final iconv-devel might not be available :(
-
-  # For JRuby (if you wish to use it) you will need:
-  jruby: yum install -y java
-"
-
-  else
-    printf "
-dependencies:
-  # RVM
-  rvm: bash curl git
-
-  # For Ruby (MRI & Ree) you should install the following OS dependencies:
-  ruby: # gcc-c++ patch readline zlib libyaml iconv libxml2 libxslt
-
-  # For JRuby (if you wish to use it) you will need:
-  jruby: # The SUN java runtime environment and development kit.
-
-  # For IronRuby (if you wish to use it) you will need:
-  ironruby: #The Mono Runtime and Development Platform (version 2.6 or greater is recommended).
-"
-  fi
-elif [[ "Darwin" = "$system"  ]] ; then
-
-  release="( $(sw_vers -productName) )"
-
-  printf "
-  Notes for ${system} $release
-    For Snow Leopard be sure to have Xcode Tools Version 3.2.1 (1613) or later
-    You should download the latest Xcode tools from developer.apple.com.
-      (This is since the dvd install for Snow Leopard contained bugs).
-
-    If you intend on installing MacRuby you must install LLVM first.
-    If you intend on installing JRuby you must install the JDK.
-    If you intend on installing IronRuby you must install Mono (version 2.6 or greater is recommended).
-  "
-fi
 
 echo
-
